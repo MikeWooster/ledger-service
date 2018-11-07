@@ -9,7 +9,7 @@ class TypeCode(Enum):
 class AbstractEntryType:
 
     def get_sign(self) -> int:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
 
 class CreditType(AbstractEntryType):
@@ -36,5 +36,5 @@ entry_type_map = {
     }
 
 
-def create_entry_type(type_code: TypeCode) -> AbstractEntryType:
+def get_accounting_type(type_code: TypeCode) -> AbstractEntryType:
     return entry_type_map[type_code]

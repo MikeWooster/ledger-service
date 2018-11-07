@@ -1,7 +1,7 @@
-from app.ledger.accounting_types import (
+from ledger.accounting_types import (
     AbstractEntryType,
     TypeCode,
-    create_entry_type,
+    get_accounting_type,
 )
 
 
@@ -55,7 +55,7 @@ class Ledger:
 
     @classmethod
     def add_entry(cls, account_number: str, amount: int, type_code: TypeCode) -> LedgerEntry:
-        accounting_type = create_entry_type(type_code)
+        accounting_type = get_accounting_type(type_code)
         entry = LedgerEntry(account_number, amount, accounting_type)
         cls._ledger.append(entry)
         Balance.update_balance(entry)
@@ -63,6 +63,7 @@ class Ledger:
 
     @classmethod
     def get_all_entries(cls) -> list:
+        """Return a copy of the inner entries to avoid mutating the original."""
         entries = []
         for entry in cls._ledger:
             entries.append(entry)
