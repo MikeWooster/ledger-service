@@ -20,6 +20,17 @@ def credit():
         return str(entry), HTTPStatus.CREATED
 
 
+@blueprint.route("/ledger/debit", methods=("POST",))
+def debit():
+    if request.method == "POST":
+        post_data = request.get_json()
+        debit_amount = post_data["debitAmount"]
+        account_number = post_data["accountNumber"]
+
+        entry = Ledger.add_entry(account_number, debit_amount, TypeCode.DEBIT)
+        return str(entry), HTTPStatus.CREATED
+
+
 @blueprint.route("/ledger", methods=("GET",))
 def ledger():
     if request.method == "GET":

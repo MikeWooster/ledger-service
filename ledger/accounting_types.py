@@ -30,9 +30,13 @@ class DebitType(AbstractEntryType):
         return "Debit"
 
 
+credit_type = CreditType()
+debit_type = DebitType()
+
+
 entry_type_map = {
-        TypeCode.CREDIT: CreditType(),
-        TypeCode.DEBIT: DebitType(),
+        TypeCode.CREDIT: credit_type,
+        TypeCode.DEBIT: debit_type,
     }
 
 

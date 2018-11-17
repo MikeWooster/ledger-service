@@ -2,7 +2,7 @@ import json
 from http import HTTPStatus
 
 from ledger.accounting import Ledger
-from ledger.accounting_types import get_accounting_type, TypeCode
+from ledger.accounting_types import TypeCode, credit_type, debit_type
 
 
 class MethodNotAllowedTests:
@@ -105,7 +105,21 @@ def test_add_credit_to_account_success(clean_session, client):
     ledger_entry = Ledger.get_all_entries()[0]
     assert ledger_entry.account_number == account_number
     assert ledger_entry.amount == 1000
-    assert ledger_entry.accounting_type == get_accounting_type(TypeCode.CREDIT)
+    assert ledger_entry.accounting_type == credit_type
+
+
+def test_add_debit_to_account_success(clean_session, client):
+    response = client.post(
+        "ledger/debit",
+        json={"debitAmount": 328, "accountNumber": "23938293"},
+        headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == HTTPStatus.CREATED
+    assert len(Ledger.get_all_entries()) == 1
+    ledger_entry = Ledger.get_all_entries()[0]
+    assert ledger_entry.account_number == "23938293"
+    assert ledger_entry.amount == 328
+    assert ledger_entry.accounting_type == debit_type
 
 
 def test_empty_ledger_response_as_empty_list(clean_session, client):
