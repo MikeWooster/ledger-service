@@ -18,6 +18,9 @@ class LedgerEntry:
     def get_signed_amount(self) -> int:
         return self.amount * self.accounting_type.get_sign()
 
+    def get_accounting_type_code(self) -> int:
+        return self.accounting_type.get_type_code()
+
     def __str__(self) -> str:
         return (
             f"<LedgerEntry: account_number={self.account_number}, "
@@ -67,15 +70,32 @@ class Ledger:
     @classmethod
     def add_entry(cls, account_number: str, amount: int, type_code: TypeCode) -> LedgerEntry:
         accounting_type = get_accounting_type(type_code)
-        entry = LedgerEntry(account_number, amount, accounting_type)
-        cls._ledger.append(entry)
-        Balance.update_balance(entry)
-        return entry
+        ledger_entry = LedgerEntry(account_number, amount, accounting_type)
+        cls._store(ledger_entry)
+        Balance.update_balance(ledger_entry)
+        return ledger_entry
+
+    @classmethod
+    def _store(cls, ledger_entry: LedgerEntry):
+        """Store ledger record in db."""
+        ledger_record = models.Ledger(
+            account_number=ledger_entry.account_number,
+            amount=ledger_entry.amount,
+            accounting_type=ledger_entry.get_accounting_type_code(),
+        )
+        ledger_record.save()
 
     @classmethod
     def get_all_entries(cls) -> list:
-        """Return a copy of the inner entries to avoid mutating the original."""
+        """Return all ledger entries."""
+        # TODO: this method should be deprecated as it is going to get really inefficient.
         entries = []
-        for entry in cls._ledger:
+        for record in models.Ledger.query.all():
+            entry = cls._record_to_entry(record)
             entries.append(entry)
         return entries
+
+    @classmethod
+    def _record_to_entry(cls, record: models.Ledger):
+        accounting_type = get_accounting_type(record.accounting_type)
+        return LedgerEntry(record.account_number, record.amount, accounting_type)

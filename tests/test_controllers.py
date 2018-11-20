@@ -1,6 +1,8 @@
 import json
 from http import HTTPStatus
 
+import pytest
+
 from ledger.accounting import Ledger
 from ledger.accounting_types import TypeCode, credit_type, debit_type
 

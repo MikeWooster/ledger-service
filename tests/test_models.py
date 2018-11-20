@@ -1,3 +1,6 @@
+import pytest
+
+from ledger.accounting_types import TypeCode
 from ledger.models import Ledger, Balance
 
 
@@ -5,7 +8,7 @@ def test_ledger_save_method(db_session):
     entry = Ledger(
         account_number="12323123",
         amount=392,
-        accounting_type="C",
+        accounting_type=TypeCode.CREDIT.value,
     )
     entry.save()
     assert len(Ledger.query.filter_by(account_number="12323123").all()) == 1
@@ -26,9 +29,9 @@ def test_ledger_representation(db_session):
     entry = Ledger(
         account_number="12323123",
         amount=392,
-        accounting_type="C",
+        accounting_type=TypeCode.DEBIT.value,
     )
-    assert str(entry) == "<Ledger: (id=None, account_number=12323123, amount=392, accounting_type=C)>"
+    assert str(entry) == "<Ledger: (id=None, account_number=12323123, amount=392, accounting_type=D)>"
 
 
 def test_balance_representation(db_session):

@@ -1,3 +1,4 @@
+from ledger.accounting_types import TypeCode
 from ledger.database import db
 
 
@@ -11,6 +12,7 @@ class BaseModel(db.Model):
 
 class Ledger(BaseModel):
     __tablename__ = "ledger"
+
     id = db.Column(db.Integer, primary_key=True)
     account_number = db.Column(db.String(16))
     amount = db.Column(db.Integer)
@@ -26,6 +28,7 @@ class Ledger(BaseModel):
 
 class Balance(BaseModel):
     __tablename__ = "balance"
+
     id = db.Column(db.Integer, primary_key=True)
     account_number = db.Column(db.String(16), index=True, unique=True)
     balance = db.Column(db.Integer)
