@@ -1,17 +1,19 @@
 import pytest
+from flask_sqlalchemy import SQLAlchemy
 
 from ledger import create_app
 from ledger.accounting import Ledger, Balance
+from ledger.database import db
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def app():
     """Flask app fixture."""
     app = create_app()
     return app
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def client(app):
 
     app.config['TESTING'] = True
@@ -28,3 +30,12 @@ def clean_session():
     if Balance._balances:
         Balance._balances = {}
     yield
+
+
+@pytest.fixture(scope='session')
+def _db(app):
+    '''
+    Provide the transactional fixtures with access to the database via a Flask-SQLAlchemy
+    database connection.
+    '''
+    return db

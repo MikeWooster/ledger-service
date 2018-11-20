@@ -5,12 +5,14 @@ from distutils.core import setup
 
 application_dependencies = [
     'flask',
+    'flask-sqlalchemy',
 ]
 prod_dependencies = []
 test_dependencies = [
     'tox',
     'pytest-cov',
     'pytest-env',
+    'pytest-flask-sqlalchemy',
 ]
 lint_dependencies = [
     'flake8',
