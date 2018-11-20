@@ -94,7 +94,7 @@ class TestMethodsNotAllowedOnBalanceEndpoint(MethodNotAllowedTests):
     endpoint_url = "/account/12390403/balance"
 
 
-def test_add_credit_to_account_success(db_session, clean_session, client):
+def test_add_credit_to_account_success(db_session, client):
     amount = 1000
     account_number = "19201923830"
     response = client.post(
@@ -110,7 +110,7 @@ def test_add_credit_to_account_success(db_session, clean_session, client):
     assert ledger_entry.accounting_type == credit_type
 
 
-def test_add_debit_to_account_success(db_session, clean_session, client):
+def test_add_debit_to_account_success(db_session, client):
     response = client.post(
         "ledger/debit",
         json={"debitAmount": 328, "accountNumber": "23938293"},
@@ -124,20 +124,20 @@ def test_add_debit_to_account_success(db_session, clean_session, client):
     assert ledger_entry.accounting_type == debit_type
 
 
-def test_empty_ledger_response_as_empty_list(db_session, clean_session, client):
+def test_empty_ledger_response_as_empty_list(db_session, client):
     response = client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
     assert response.json == []
 
 
-def test_single_ledger_entry(db_session, clean_session, client):
+def test_single_ledger_entry(db_session, client):
     entry = Ledger.add_entry("89234", 100, TypeCode.DEBIT)
     response = client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
     assert response.json == [str(entry)]
 
 
-def test_get_account_balance(db_session, clean_session, client):
+def test_get_account_balance(db_session, client):
     account_number = "92373"
     Ledger.add_entry(account_number, 2931, TypeCode.CREDIT)
     response = client.get(f"/account/{account_number}/balance")

@@ -39,14 +39,6 @@ def client(app):
     yield client
 
 
-@pytest.fixture
-def clean_session():
-    """Clears all data before running test method."""
-    if Ledger._ledger:
-        Ledger._ledger = []
-    yield
-
-
 @pytest.fixture(scope='session')
 def db(app, request):
     """Session-wide test database."""

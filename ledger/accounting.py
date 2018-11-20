@@ -65,7 +65,6 @@ class Ledger:
         - a unique id for this transaction
         - the id of a related transaction (may be null)
     """
-    _ledger = []
 
     @classmethod
     def add_entry(cls, account_number: str, amount: int, type_code: TypeCode) -> LedgerEntry:
