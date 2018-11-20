@@ -1,8 +1,11 @@
+from sqlalchemy.orm.exc import NoResultFound
+
 from ledger.accounting_types import (
     AbstractEntryType,
     TypeCode,
     get_accounting_type,
 )
+from ledger import models
 
 
 class LedgerEntry:
@@ -27,13 +30,22 @@ class Balance:
 
     @staticmethod
     def update_balance(entry: LedgerEntry):
-        current_balance = Balance._balances.get(entry.account_number, 0)
-        current_balance += entry.get_signed_amount()
-        Balance._balances[entry.account_number] = current_balance
+        balance_record = Balance._get_or_create_record(entry.account_number)
+        balance_record.balance += entry.get_signed_amount()
+        balance_record.save()
+
+    @staticmethod
+    def _get_or_create_record(account_number: str) -> models.Balance:
+        try:
+            balance_entry = models.Balance.query.filter_by(account_number=account_number).one()
+        except NoResultFound:
+            balance_entry = models.Balance(account_number=account_number, balance=0)
+        return balance_entry
 
     @staticmethod
     def get_for_account(account_number: str) -> int:
-        return Balance._balances[account_number]
+        balance_record = Balance._get_or_create_record(account_number)
+        return balance_record.balance
 
 
 class Ledger:

@@ -8,7 +8,7 @@ from ledger.accounting_types import TypeCode, get_accounting_type
     (TypeCode.CREDIT, "Credit"),
     (TypeCode.DEBIT, "Debit"),
 ])
-def test_add_accounting_type_to_ledger(clean_session, type_code, type_str):
+def test_add_accounting_type_to_ledger(db_session, clean_session, type_code, type_str):
     entry = Ledger.add_entry(
         account_number="39209030",
         amount=1230,
@@ -20,7 +20,7 @@ def test_add_accounting_type_to_ledger(clean_session, type_code, type_str):
     assert str(entry.accounting_type) == type_str
 
 
-def test_balance_is_updated(clean_session):
+def test_balance_is_updated(clean_session, db_session):
     account_number = "39209030"
     Ledger.add_entry(
         account_number=account_number,
