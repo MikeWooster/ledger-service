@@ -26,7 +26,6 @@ class LedgerEntry:
 
 
 class Balance:
-    _balances = {}
 
     @staticmethod
     def update_balance(entry: LedgerEntry):

@@ -27,8 +27,6 @@ def clean_session():
     """Clears all data before running test method."""
     if Ledger._ledger:
         Ledger._ledger = []
-    if Balance._balances:
-        Balance._balances = {}
     yield
 
 
