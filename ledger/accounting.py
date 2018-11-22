@@ -1,8 +1,11 @@
+from sqlalchemy.orm.exc import NoResultFound
+
 from ledger.accounting_types import (
     AbstractEntryType,
     TypeCode,
     get_accounting_type,
 )
+from ledger import models
 
 
 class LedgerEntry:
@@ -15,6 +18,9 @@ class LedgerEntry:
     def get_signed_amount(self) -> int:
         return self.amount * self.accounting_type.get_sign()
 
+    def get_accounting_type_code(self) -> int:
+        return self.accounting_type.get_type_code()
+
     def __str__(self) -> str:
         return (
             f"<LedgerEntry: account_number={self.account_number}, "
@@ -23,17 +29,25 @@ class LedgerEntry:
 
 
 class Balance:
-    _balances = {}
 
     @staticmethod
     def update_balance(entry: LedgerEntry):
-        current_balance = Balance._balances.get(entry.account_number, 0)
-        current_balance += entry.get_signed_amount()
-        Balance._balances[entry.account_number] = current_balance
+        balance_record = Balance._get_or_create_record(entry.account_number)
+        balance_record.balance += entry.get_signed_amount()
+        balance_record.save()
+
+    @staticmethod
+    def _get_or_create_record(account_number: str) -> models.Balance:
+        try:
+            balance_entry = models.Balance.query.filter_by(account_number=account_number).one()
+        except NoResultFound:
+            balance_entry = models.Balance(account_number=account_number, balance=0)
+        return balance_entry
 
     @staticmethod
     def get_for_account(account_number: str) -> int:
-        return Balance._balances[account_number]
+        balance_record = Balance._get_or_create_record(account_number)
+        return balance_record.balance
 
 
 class Ledger:
@@ -51,20 +65,36 @@ class Ledger:
         - a unique id for this transaction
         - the id of a related transaction (may be null)
     """
-    _ledger = []
 
     @classmethod
     def add_entry(cls, account_number: str, amount: int, type_code: TypeCode) -> LedgerEntry:
         accounting_type = get_accounting_type(type_code)
-        entry = LedgerEntry(account_number, amount, accounting_type)
-        cls._ledger.append(entry)
-        Balance.update_balance(entry)
-        return entry
+        ledger_entry = LedgerEntry(account_number, amount, accounting_type)
+        cls._store(ledger_entry)
+        Balance.update_balance(ledger_entry)
+        return ledger_entry
+
+    @classmethod
+    def _store(cls, ledger_entry: LedgerEntry):
+        """Store ledger record in db."""
+        ledger_record = models.Ledger(
+            account_number=ledger_entry.account_number,
+            amount=ledger_entry.amount,
+            accounting_type=ledger_entry.get_accounting_type_code(),
+        )
+        ledger_record.save()
 
     @classmethod
     def get_all_entries(cls) -> list:
-        """Return a copy of the inner entries to avoid mutating the original."""
+        """Return all ledger entries."""
+        # TODO: this method should be deprecated as it is going to get really inefficient.
         entries = []
-        for entry in cls._ledger:
+        for record in models.Ledger.query.all():
+            entry = cls._record_to_entry(record)
             entries.append(entry)
         return entries
+
+    @classmethod
+    def _record_to_entry(cls, record: models.Ledger):
+        accounting_type = get_accounting_type(record.accounting_type)
+        return LedgerEntry(record.account_number, record.amount, accounting_type)
