@@ -6,6 +6,8 @@ from distutils.core import setup
 application_dependencies = [
     'flask',
     'flask-sqlalchemy',
+    'psycopg2',
+    'flask-migrate',
 ]
 prod_dependencies = []
 test_dependencies = [
