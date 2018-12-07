@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy.orm.exc import NoResultFound
 
 from ledger.accounting_types import (
@@ -10,22 +12,16 @@ from ledger import models
 
 class LedgerEntry:
 
-    def __init__(self, account_number: str, amount: int, accounting_type: AbstractEntryType):
+    def __init__(self, account_number: str, amount: Decimal, accounting_type: AbstractEntryType):
         self.account_number = account_number
         self.amount = amount
         self.accounting_type = accounting_type
 
-    def get_signed_amount(self) -> int:
+    def get_signed_amount(self) -> Decimal:
         return self.amount * self.accounting_type.get_sign()
 
-    def get_accounting_type_code(self) -> int:
+    def get_accounting_type_code(self) -> str:
         return self.accounting_type.get_type_code()
-
-    def __str__(self) -> str:
-        return (
-            f"<LedgerEntry: account_number={self.account_number}, "
-            f"amount={self.amount}, accounting_type={self.accounting_type}>"
-        )
 
 
 class Balance:
@@ -45,7 +41,7 @@ class Balance:
         return balance_entry
 
     @staticmethod
-    def get_for_account(account_number: str) -> int:
+    def get_for_account(account_number: str) -> Decimal:
         balance_record = Balance._get_or_create_record(account_number)
         return balance_record.balance
 
@@ -67,7 +63,7 @@ class Ledger:
     """
 
     @classmethod
-    def add_entry(cls, account_number: str, amount: int, type_code: TypeCode) -> LedgerEntry:
+    def add_entry(cls, account_number: str, amount: Decimal, type_code: TypeCode) -> LedgerEntry:
         accounting_type = get_accounting_type(type_code)
         ledger_entry = LedgerEntry(account_number, amount, accounting_type)
         cls._store(ledger_entry)

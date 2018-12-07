@@ -8,10 +8,12 @@ application_dependencies = [
     'flask-sqlalchemy',
     'psycopg2',
     'flask-migrate',
+    'marshmallow',
 ]
 prod_dependencies = []
 test_dependencies = [
     'tox',
+    'pytest',
     'pytest-cov',
     'pytest-env',
     'pytest-flask-sqlalchemy',

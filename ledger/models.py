@@ -1,4 +1,3 @@
-from ledger.accounting_types import TypeCode
 from ledger.database import db
 
 
@@ -15,7 +14,7 @@ class Ledger(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True)
     account_number = db.Column(db.String(16))
-    amount = db.Column(db.Integer)
+    amount = db.Column(db.DECIMAL(10, 2))
     accounting_type = db.Column(db.String(1))
 
     def __repr__(self):
@@ -31,7 +30,7 @@ class Balance(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True)
     account_number = db.Column(db.String(16), index=True, unique=True)
-    balance = db.Column(db.Integer)
+    balance = db.Column(db.DECIMAL(10, 2))
 
     def __repr__(self):
         return (
