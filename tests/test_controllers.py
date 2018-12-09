@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from http import HTTPStatus
 
 import pytest
@@ -81,7 +82,7 @@ class MethodNotAllowedTests:
 class TestMethodsNotAllowedOnCreditEndpoint(MethodNotAllowedTests):
     allowed_methods = {"POST", "OPTIONS"}
     endpoint_url = "/ledger/credit"
-    default_data = {"creditAmount": 1000, "accountNumber": "12340493"}
+    default_data = {"creditAmount": "1000.82", "accountNumber": "12340493"}
 
 
 class TestMethodsNotAllowedOnLedgerEndpoint(MethodNotAllowedTests):
@@ -95,32 +96,40 @@ class TestMethodsNotAllowedOnBalanceEndpoint(MethodNotAllowedTests):
 
 
 def test_add_credit_to_account_success(db_session, client):
-    amount = 1000
-    account_number = "19201923830"
     response = client.post(
         "ledger/credit",
-        data=json.dumps({"creditAmount": amount, "accountNumber": account_number}),
+        data=json.dumps({"creditAmount": "1000.81", "accountNumber": "19201923830"}),
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == HTTPStatus.CREATED
+    assert response.json == {
+        "amount": "1000.81",
+        "accountNumber": "19201923830",
+        "accountingType": "Credit",
+    }
     assert len(Ledger.get_all_entries()) == 1
     ledger_entry = Ledger.get_all_entries()[0]
-    assert ledger_entry.account_number == account_number
-    assert ledger_entry.amount == 1000
+    assert ledger_entry.account_number == "19201923830"
+    assert ledger_entry.amount == Decimal("1000.81")
     assert ledger_entry.accounting_type == credit_type
 
 
 def test_add_debit_to_account_success(db_session, client):
     response = client.post(
         "ledger/debit",
-        json={"debitAmount": 328, "accountNumber": "23938293"},
+        json={"debitAmount": "328.18", "accountNumber": "23938293"},
         headers={"Content-Type": "application/json"}
     )
     assert response.status_code == HTTPStatus.CREATED
+    assert response.json == {
+        "amount": "328.18",
+        "accountNumber": "23938293",
+        "accountingType": "Debit",
+    }
     assert len(Ledger.get_all_entries()) == 1
     ledger_entry = Ledger.get_all_entries()[0]
     assert ledger_entry.account_number == "23938293"
-    assert ledger_entry.amount == 328
+    assert ledger_entry.amount == Decimal("328.18")
     assert ledger_entry.accounting_type == debit_type
 
 
@@ -131,15 +140,20 @@ def test_empty_ledger_response_as_empty_list(db_session, client):
 
 
 def test_single_ledger_entry(db_session, client):
-    entry = Ledger.add_entry("89234", 100, TypeCode.DEBIT)
+    Ledger.add_entry("89234", Decimal("100.92"), TypeCode.DEBIT)
     response = client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
-    assert response.json == [str(entry)]
+    assert response.json == [{
+        "amount": "100.92",
+        "accountNumber": "89234",
+        "accountingType": "Debit",
+    }]
 
 
+@pytest.mark.tmp
 def test_get_account_balance(db_session, client):
     account_number = "92373"
-    Ledger.add_entry(account_number, 2931, TypeCode.CREDIT)
+    Ledger.add_entry(account_number, Decimal("2931.00"), TypeCode.CREDIT)
     response = client.get(f"/account/{account_number}/balance")
     assert response.status_code == HTTPStatus.OK
-    assert response.json["balance"] == 2931
+    assert response.json["balance"] == "2931.00"
