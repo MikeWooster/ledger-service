@@ -38,11 +38,11 @@ debit_type = DebitType()
 
 
 entry_type_map = {
-        TypeCode.CREDIT: credit_type,
-        TypeCode.DEBIT: debit_type,
-        TypeCode.CREDIT.value: credit_type,
-        TypeCode.DEBIT.value: debit_type,
-    }
+    TypeCode.CREDIT: credit_type,
+    TypeCode.DEBIT: debit_type,
+    TypeCode.CREDIT.value: credit_type,
+    TypeCode.DEBIT.value: debit_type,
+}
 
 
 def get_accounting_type(type_code: TypeCode) -> AbstractEntryType:

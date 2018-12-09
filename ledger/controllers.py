@@ -7,7 +7,7 @@ from ledger.accounting_types import TypeCode
 from ledger.schemas import credit_schema, ledger_entry_schema, debit_schema, balance_schema
 
 
-blueprint = Blueprint("ledger",  __name__, url_prefix="/")
+blueprint = Blueprint("ledger", __name__, url_prefix="/")
 
 
 @blueprint.route("/ledger/credit", methods=("POST",))
@@ -16,11 +16,7 @@ def credit():
         post_data = request.get_json()
         result = credit_schema.load(post_data).data
 
-        entry = Ledger.add_entry(
-            result.account_number,
-            result.amount,
-            TypeCode.CREDIT,
-        )
+        entry = Ledger.add_entry(result.account_number, result.amount, TypeCode.CREDIT)
         serialized_entry = ledger_entry_schema.dump(entry)
         return jsonify(serialized_entry.data), HTTPStatus.CREATED
 
@@ -32,9 +28,7 @@ def debit():
         result = debit_schema.load(post_data).data
 
         entry = Ledger.add_entry(
-            account_number=result.account_number,
-            amount=result.amount,
-            type_code=TypeCode.DEBIT,
+            account_number=result.account_number, amount=result.amount, type_code=TypeCode.DEBIT
         )
         serialized_entry = ledger_entry_schema.dump(entry)
         return jsonify(serialized_entry.data), HTTPStatus.CREATED

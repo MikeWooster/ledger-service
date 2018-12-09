@@ -1,24 +1,19 @@
 import os
 
 import pytest
-from flask_sqlalchemy import SQLAlchemy
 
 from ledger import create_app
-from ledger.accounting import Ledger, Balance
 from ledger.database import db as _db
 
 
-TESTDB = '/tmp/test_project.db'
-TEST_DATABASE_URI = f'sqlite:///{TESTDB}'
+TESTDB = "/tmp/test_project.db"
+TEST_DATABASE_URI = f"sqlite:///{TESTDB}"
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def app(request):
     """Session-wide test `Flask` application."""
-    settings_override = {
-        'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI
-    }
+    settings_override = {"TESTING": True, "SQLALCHEMY_DATABASE_URI": TEST_DATABASE_URI}
     app = create_app(extra_config=settings_override)
 
     # Establish an application context before running the tests.
@@ -33,13 +28,13 @@ def app(request):
     return app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def client(app):
     client = app.test_client()
     yield client
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def db(app, request):
     """Session-wide test database."""
     if os.path.exists(TESTDB):
@@ -56,9 +51,9 @@ def db(app, request):
     return _db
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def db_session(db, request):
-    """Creates a new database session for a test."""
+    """Create a new database session for a test."""
     connection = db.engine.connect()
     transaction = connection.begin()
 
