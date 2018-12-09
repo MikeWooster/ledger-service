@@ -33,7 +33,4 @@ class Balance(BaseModel):
     balance = db.Column(db.DECIMAL(10, 2))
 
     def __repr__(self):
-        return (
-            f"<Balance: (id={self.id}, account_number="
-            f"{self.account_number}, balance={self.balance})>"
-        )
+        return f"<Balance: (id={self.id}, account_number=" f"{self.account_number}, balance={self.balance})>"

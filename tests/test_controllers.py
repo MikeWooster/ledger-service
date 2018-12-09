@@ -15,7 +15,7 @@ class MethodNotAllowedTests:
     default_data = {}
 
     def get_endpoint(self):
-        """Returns the requested endpoint.
+        """Return the requested endpoint.
 
         Method can be overridden for more complicated use cases.
         """
@@ -34,38 +34,22 @@ class MethodNotAllowedTests:
 
     def test_POST_method_not_allowed(self, db_session, client):
         if "POST" not in self.allowed_methods:
-            response = client.post(
-                self.get_endpoint(),
-                headers=self.get_headers(),
-                json=self.get_data(),
-            )
+            response = client.post(self.get_endpoint(), headers=self.get_headers(), json=self.get_data())
             assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     def test_PUT_method_not_allowed(self, db_session, client):
         if "PUT" not in self.allowed_methods:
-            response = client.put(
-                self.get_endpoint(),
-                headers=self.get_headers(),
-                json=self.get_data(),
-            )
+            response = client.put(self.get_endpoint(), headers=self.get_headers(), json=self.get_data())
             assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     def test_PATCH_method_not_allowed(self, db_session, client):
         if "PATCH" not in self.allowed_methods:
-            response = client.patch(
-                self.get_endpoint(),
-                headers=self.get_headers(),
-                json=self.get_data(),
-            )
+            response = client.patch(self.get_endpoint(), headers=self.get_headers(), json=self.get_data())
             assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     def test_DELETE_method_not_allowed(self, db_session, client):
         if "DELETE" not in self.allowed_methods:
-            response = client.delete(
-                self.get_endpoint(),
-                headers=self.get_headers(),
-                json=self.get_data(),
-            )
+            response = client.delete(self.get_endpoint(), headers=self.get_headers(), json=self.get_data())
             assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     def test_HEAD_method_not_allowed(self, client):
@@ -102,11 +86,7 @@ def test_add_credit_to_account_success(db_session, client):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == HTTPStatus.CREATED
-    assert response.json == {
-        "amount": "1000.81",
-        "accountNumber": "19201923830",
-        "accountingType": "Credit",
-    }
+    assert response.json == {"amount": "1000.81", "accountNumber": "19201923830", "accountingType": "Credit"}
     assert len(Ledger.get_all_entries()) == 1
     ledger_entry = Ledger.get_all_entries()[0]
     assert ledger_entry.account_number == "19201923830"
@@ -118,14 +98,10 @@ def test_add_debit_to_account_success(db_session, client):
     response = client.post(
         "ledger/debit",
         json={"debitAmount": "328.18", "accountNumber": "23938293"},
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     )
     assert response.status_code == HTTPStatus.CREATED
-    assert response.json == {
-        "amount": "328.18",
-        "accountNumber": "23938293",
-        "accountingType": "Debit",
-    }
+    assert response.json == {"amount": "328.18", "accountNumber": "23938293", "accountingType": "Debit"}
     assert len(Ledger.get_all_entries()) == 1
     ledger_entry = Ledger.get_all_entries()[0]
     assert ledger_entry.account_number == "23938293"
@@ -143,11 +119,7 @@ def test_single_ledger_entry(db_session, client):
     Ledger.add_entry("89234", Decimal("100.92"), TypeCode.DEBIT)
     response = client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
-    assert response.json == [{
-        "amount": "100.92",
-        "accountNumber": "89234",
-        "accountingType": "Debit",
-    }]
+    assert response.json == [{"amount": "100.92", "accountNumber": "89234", "accountingType": "Debit"}]
 
 
 @pytest.mark.tmp
