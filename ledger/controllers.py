@@ -12,6 +12,7 @@ blueprint = Blueprint("ledger", __name__, url_prefix="/")
 
 @blueprint.route("/ledger/credit", methods=("POST",))
 def credit():
+    """Add a credit amount to the ledger."""
     if request.method == "POST":
         post_data = request.get_json()
         result = credit_schema.load(post_data).data
@@ -23,6 +24,7 @@ def credit():
 
 @blueprint.route("/ledger/debit", methods=("POST",))
 def debit():
+    """Add a debit amount to the ledger."""
     if request.method == "POST":
         post_data = request.get_json()
         result = debit_schema.load(post_data).data
@@ -36,6 +38,7 @@ def debit():
 
 @blueprint.route("/ledger", methods=("GET",))
 def ledger():
+    """View the ledger."""
     if request.method == "GET":
         entries = Ledger.get_all_entries()
         response = []
@@ -47,6 +50,7 @@ def ledger():
 
 @blueprint.route("/account/<account_number>/balance", methods=("GET",))
 def account_balance(account_number):
+    """Get the account balance for an account."""
     if request.method == "GET":
         balance = Balance.get_for_account(account_number)
         serialized_entry = balance_schema.dump({"balance": balance})

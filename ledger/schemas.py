@@ -20,6 +20,8 @@ class TransactionData(NamedTuple):
 
 
 class CreditSchema(Schema):
+    """Deserializer for a credit request."""
+
     creditAmount = fields.Decimal(attribute="amount", required=True)
     accountNumber = fields.Str(attribute="account_number", required=True)
 
@@ -32,6 +34,8 @@ class CreditSchema(Schema):
 
 
 class DebitSchema(Schema):
+    """Deserializer for a debit request."""
+
     debitAmount = fields.Decimal(attribute="amount", required=True)
     accountNumber = fields.Str(attribute="account_number", required=True)
 
@@ -44,6 +48,8 @@ class DebitSchema(Schema):
 
 
 class BalanceSchema(Schema):
+    """Serializer for balance responses."""
+
     balance = fields.Str()
 
 

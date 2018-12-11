@@ -2,6 +2,13 @@ from ledger.database import db
 
 
 class BaseModel(db.Model):
+    """Abstract model from which all other models need to inherit from.
+
+    Provides convenience methods:
+        - save()
+
+    """
+
     __abstract__ = True
 
     def save(self):
@@ -10,6 +17,8 @@ class BaseModel(db.Model):
 
 
 class Ledger(BaseModel):
+    """Database model for the ledger."""
+
     __tablename__ = "ledger"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +35,8 @@ class Ledger(BaseModel):
 
 
 class Balance(BaseModel):
+    """Database model for the customers balance."""
+
     __tablename__ = "balance"
 
     id = db.Column(db.Integer, primary_key=True)

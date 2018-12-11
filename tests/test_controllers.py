@@ -9,6 +9,8 @@ from ledger.accounting_types import TypeCode, credit_type, debit_type
 
 
 class MethodNotAllowedTests:
+    """Mixin to test for non-allowed HTTP methods."""
+
     allowed_methods = set()
     endpoint_url = ""
     default_headers = {}
