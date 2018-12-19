@@ -33,3 +33,13 @@ When making database changes, new migrations can be generated with
 ```
 flask db migrate
 ```
+
+# Deploying
+
+Deploy using Docker.
+
+Update requirements.txt file using
+```
+invoke requirements
+```
+
