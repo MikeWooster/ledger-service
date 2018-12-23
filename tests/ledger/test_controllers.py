@@ -1,12 +1,9 @@
-import json
 from decimal import Decimal
 from http import HTTPStatus
 
-import pytest
-
+from ledger.authorization.models import Token
 from ledger.ledger.accounting import Ledger
 from ledger.ledger.accounting_types import TypeCode, credit_type, debit_type
-from ledger.authorization.models import Token
 
 
 class MethodNotAllowedTests:
@@ -68,35 +65,98 @@ class MethodNotAllowedTests:
 
 class TokenAuthenticationTests:
     """Mixin to test for correct authentication on endpoints."""
+
     endpoint_url = ""
+    auth_scheme = "Token"
+    method = ""
+    default_data = None
+    status_code = None
 
     def _create_valid_token(self):
         token_value = "foo-bar"
         token = Token(access_token=token_value)
         token.save()
+        return token_value
 
     def _get_valid_authorization_header(self):
         token = self._create_valid_token()
-        auth_scheme = self._get_auth_scheme()
-        return f"{auth_scheme} {token}"
+        return f"{self.auth_scheme} {token}"
+
+    def _get_headers(self, **headers):
+        default_headers = {"Content-Type": "application/json"}
+        default_headers.update(headers)
+        return default_headers
+
+    def get_data(self):
+        return self.default_data
 
     def test_valid_authorization_header_is_allowed_access(self, db_session, client):
         authorization_header = self._get_valid_authorization_header()
-        response = client.post(
-            self.endpoint_url,
-            headers={"Authorization": authorization_header},
-        )
-        assert response.status_code == HTTPStatus.CREATED
+        headers = self._get_headers(Authorization=authorization_header)
+        response = client.open(self.endpoint_url, method=self.method, headers=headers, json=self.get_data())
+        assert response.status_code == self.status_code
+
+    def test_invalid_authorization_header_gets_401_unauthorized(self, db_session, client):
+        authorization_header = "Token does-not-exist"
+        headers = self._get_headers(Authorization=authorization_header)
+        response = client.open(self.endpoint_url, method=self.method, headers=headers, json=self.get_data())
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_missing_authorization_header_gets_401_unauthorized(self, db_session, client):
+        headers = self._get_headers()
+        response = client.open(self.endpoint_url, method=self.method, headers=headers, json=self.get_data())
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_badly_formed_authorization_header_gets_401_unauthorized(self, db_session, client):
+        authorization_header = "does-not-exist"
+        headers = self._get_headers(Authorization=authorization_header)
+        response = client.open(self.endpoint_url, method=self.method, headers=headers, json=self.get_data())
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_incorrect_scheme_in_authorization_header_gets_401_unauthorized(self, db_session, client):
+        token = self._create_valid_token()
+        authorization_header = f"Bearer {token}"
+        headers = self._get_headers(Authorization=authorization_header)
+        response = client.open(self.endpoint_url, method=self.method, headers=headers, json=self.get_data())
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
-# class TestTokenAuthorizationOnCreditEndpoint(TokenAuthenticationTests):
-#     endpoint_url = "/ledger/credit"
+class TestTokenAuthorizationOnCreditEndpoint(TokenAuthenticationTests):
+    endpoint_url = "/ledger/credit"
+    default_data = {"creditAmount": "1000.82", "accountNumber": "12340493"}
+    method = "POST"
+    status_code = HTTPStatus.CREATED
+
+
+class TestTokenAuthorizationOnDebitEndpoint(TokenAuthenticationTests):
+    endpoint_url = "/ledger/debit"
+    default_data = {"debitAmount": "1000.82", "accountNumber": "12340493"}
+    method = "POST"
+    status_code = HTTPStatus.CREATED
+
+
+class TestTokenAuthorizationOnLedgerEndpoint(TokenAuthenticationTests):
+    endpoint_url = "/ledger"
+    method = "GET"
+    status_code = HTTPStatus.OK
+
+
+class TestTokenAuthorizationOnBalanceEndpoint(TokenAuthenticationTests):
+    endpoint_url = "/account/12390403/balance"
+    method = "GET"
+    status_code = HTTPStatus.OK
 
 
 class TestMethodsNotAllowedOnCreditEndpoint(MethodNotAllowedTests):
     allowed_methods = {"POST", "OPTIONS"}
     endpoint_url = "/ledger/credit"
     default_data = {"creditAmount": "1000.82", "accountNumber": "12340493"}
+
+
+class TestMethodsNotAllowedOnDebitEndpoint(MethodNotAllowedTests):
+    allowed_methods = {"POST", "OPTIONS"}
+    endpoint_url = "/ledger/debit"
+    default_data = {"debitAmount": "1000.82", "accountNumber": "12340493"}
 
 
 class TestMethodsNotAllowedOnLedgerEndpoint(MethodNotAllowedTests):
@@ -109,10 +169,10 @@ class TestMethodsNotAllowedOnBalanceEndpoint(MethodNotAllowedTests):
     endpoint_url = "/account/12390403/balance"
 
 
-def test_add_credit_to_account_success(db_session, client):
-    response = client.post(
+def test_add_credit_to_account_success(db_session, authorized_client):
+    response = authorized_client.post(
         "ledger/credit",
-        data=json.dumps({"creditAmount": "1000.81", "accountNumber": "19201923830"}),
+        json={"creditAmount": "1000.81", "accountNumber": "19201923830"},
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == HTTPStatus.CREATED
@@ -124,8 +184,13 @@ def test_add_credit_to_account_success(db_session, client):
     assert ledger_entry.accounting_type == credit_type
 
 
-def test_add_debit_to_account_success(db_session, client):
-    response = client.post(
+def test_add_credit_without_application_json_header_returns_bad_request(db_session, authorized_client):
+    response = authorized_client.post("ledger/credit")
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+
+def test_add_debit_to_account_success(db_session, authorized_client):
+    response = authorized_client.post(
         "ledger/debit",
         json={"debitAmount": "328.18", "accountNumber": "23938293"},
         headers={"Content-Type": "application/json"},
@@ -139,23 +204,27 @@ def test_add_debit_to_account_success(db_session, client):
     assert ledger_entry.accounting_type == debit_type
 
 
-def test_empty_ledger_response_as_empty_list(db_session, client):
-    response = client.get("/ledger")
+def test_add_debit_without_application_json_header_returns_bad_request(db_session, authorized_client):
+    response = authorized_client.post("ledger/debit")
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+
+def test_empty_ledger_response_as_empty_list(db_session, authorized_client):
+    response = authorized_client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
     assert response.json == []
 
 
-def test_single_ledger_entry(db_session, client):
+def test_single_ledger_entry(db_session, authorized_client):
     Ledger.add_entry("89234", Decimal("100.92"), TypeCode.DEBIT)
-    response = client.get("/ledger")
+    response = authorized_client.get("/ledger")
     assert response.status_code == HTTPStatus.OK
     assert response.json == [{"amount": "100.92", "accountNumber": "89234", "accountingType": "Debit"}]
 
 
-@pytest.mark.tmp
-def test_get_account_balance(db_session, client):
+def test_get_account_balance(db_session, authorized_client):
     account_number = "92373"
     Ledger.add_entry(account_number, Decimal("2931.00"), TypeCode.CREDIT)
-    response = client.get(f"/account/{account_number}/balance")
+    response = authorized_client.get(f"/account/{account_number}/balance")
     assert response.status_code == HTTPStatus.OK
     assert response.json["balance"] == "2931.00"

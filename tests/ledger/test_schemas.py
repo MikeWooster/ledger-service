@@ -108,7 +108,6 @@ class TestDebitSchema:
         assert result.account_number == "93929393"
 
 
-@pytest.mark.tmp
 class TestBalanceSchema:
     schema = balance_schema
 

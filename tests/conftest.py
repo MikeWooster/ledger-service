@@ -3,6 +3,7 @@ import os
 import pytest
 
 from ledger import create_app
+from ledger.authorization.models import Token
 from ledger.database import db as _db
 
 
@@ -35,6 +36,12 @@ def client(app):
 
 
 @pytest.fixture(scope="session")
+def authorized_client(client):
+    client.environ_base["HTTP_AUTHORIZATION"] = "Token 8ldi2lD"
+    yield client
+
+
+@pytest.fixture(scope="session")
 def db(app, request):
     """Session-wide test database."""
     if os.path.exists(TESTDB):
@@ -61,6 +68,9 @@ def db_session(db, request):
     session = db.create_scoped_session(options=options)
 
     db.session = session
+
+    token = Token(access_token="8ldi2lD")
+    token.save()
 
     def teardown():
         transaction.rollback()
