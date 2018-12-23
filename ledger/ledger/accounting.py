@@ -3,8 +3,8 @@ from typing import List
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from ledger.accounting_types import AbstractEntryType, TypeCode, get_accounting_type
-from ledger import models
+from ledger.ledger.accounting_types import AbstractEntryType, TypeCode, get_accounting_type
+from ledger.ledger import models
 
 
 class LedgerEntry:

@@ -3,9 +3,9 @@ from decimal import Decimal
 import pytest
 from marshmallow import ValidationError
 
-from ledger.accounting import LedgerEntry
-from ledger.accounting_types import credit_type, debit_type
-from ledger.schemas import credit_schema, ledger_entry_schema, debit_schema, balance_schema
+from ledger.ledger.accounting import LedgerEntry
+from ledger.ledger.accounting_types import credit_type, debit_type
+from ledger.ledger.schemas import credit_schema, ledger_entry_schema, debit_schema, balance_schema
 
 
 class TestLedgerEntrySchema:

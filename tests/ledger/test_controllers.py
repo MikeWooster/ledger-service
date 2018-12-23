@@ -4,8 +4,9 @@ from http import HTTPStatus
 
 import pytest
 
-from ledger.accounting import Ledger
-from ledger.accounting_types import TypeCode, credit_type, debit_type
+from ledger.ledger.accounting import Ledger
+from ledger.ledger.accounting_types import TypeCode, credit_type, debit_type
+from ledger.authorization.models import Token
 
 
 class MethodNotAllowedTests:
@@ -63,6 +64,33 @@ class MethodNotAllowedTests:
         if "OPTIONS" not in self.allowed_methods:
             response = client.options(self.get_endpoint())
             assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+class TokenAuthenticationTests:
+    """Mixin to test for correct authentication on endpoints."""
+    endpoint_url = ""
+
+    def _create_valid_token(self):
+        token_value = "foo-bar"
+        token = Token(access_token=token_value)
+        token.save()
+
+    def _get_valid_authorization_header(self):
+        token = self._create_valid_token()
+        auth_scheme = self._get_auth_scheme()
+        return f"{auth_scheme} {token}"
+
+    def test_valid_authorization_header_is_allowed_access(self, db_session, client):
+        authorization_header = self._get_valid_authorization_header()
+        response = client.post(
+            self.endpoint_url,
+            headers={"Authorization": authorization_header},
+        )
+        assert response.status_code == HTTPStatus.CREATED
+
+
+# class TestTokenAuthorizationOnCreditEndpoint(TokenAuthenticationTests):
+#     endpoint_url = "/ledger/credit"
 
 
 class TestMethodsNotAllowedOnCreditEndpoint(MethodNotAllowedTests):

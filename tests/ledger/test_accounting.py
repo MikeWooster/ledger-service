@@ -2,8 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from ledger.accounting import Ledger, Balance
-from ledger.accounting_types import TypeCode
+from ledger.ledger.accounting import Ledger, Balance
+from ledger.ledger.accounting_types import TypeCode
 
 
 @pytest.mark.parametrize("type_code,type_str", [(TypeCode.CREDIT, "Credit"), (TypeCode.DEBIT, "Debit")])

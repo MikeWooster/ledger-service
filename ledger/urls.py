@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from ledger.controllers import Credit, Debit, LedgerView, AccountBalance
+from ledger.ledger.controllers import Credit, Debit, LedgerView, AccountBalance
 
 
 GET = "GET"

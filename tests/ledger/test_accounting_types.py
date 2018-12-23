@@ -1,6 +1,6 @@
 import pytest
 
-from ledger.accounting_types import TypeCode, debit_type, get_accounting_type, credit_type
+from ledger.ledger.accounting_types import TypeCode, debit_type, get_accounting_type, credit_type
 
 
 @pytest.mark.parametrize(
