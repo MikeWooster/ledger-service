@@ -1,19 +1,17 @@
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request
+from flask import jsonify, request
+from flask.views import MethodView
 
 from ledger.accounting import Balance, Ledger
 from ledger.accounting_types import TypeCode
-from ledger.schemas import credit_schema, ledger_entry_schema, debit_schema, balance_schema
+from ledger.schemas import balance_schema, credit_schema, debit_schema, ledger_entry_schema
 
 
-blueprint = Blueprint("ledger", __name__, url_prefix="/")
-
-
-@blueprint.route("/ledger/credit", methods=("POST",))
-def credit():
+class Credit(MethodView):
     """Add a credit amount to the ledger."""
-    if request.method == "POST":
+
+    def post(self):
         post_data = request.get_json()
         result = credit_schema.load(post_data).data
 
@@ -22,10 +20,10 @@ def credit():
         return jsonify(serialized_entry.data), HTTPStatus.CREATED
 
 
-@blueprint.route("/ledger/debit", methods=("POST",))
-def debit():
+class Debit(MethodView):
     """Add a debit amount to the ledger."""
-    if request.method == "POST":
+
+    def post(self):
         post_data = request.get_json()
         result = debit_schema.load(post_data).data
 
@@ -36,10 +34,10 @@ def debit():
         return jsonify(serialized_entry.data), HTTPStatus.CREATED
 
 
-@blueprint.route("/ledger", methods=("GET",))
-def ledger():
+class LedgerView(MethodView):
     """View the ledger."""
-    if request.method == "GET":
+
+    def get(self):
         entries = Ledger.get_all_entries()
         response = []
         for entry in entries:
@@ -48,10 +46,10 @@ def ledger():
         return jsonify(response), HTTPStatus.OK
 
 
-@blueprint.route("/account/<account_number>/balance", methods=("GET",))
-def account_balance(account_number):
+class AccountBalance(MethodView):
     """Get the account balance for an account."""
-    if request.method == "GET":
+
+    def get(self, account_number):
         balance = Balance.get_for_account(account_number)
         serialized_entry = balance_schema.dump({"balance": balance})
         return jsonify(serialized_entry.data), HTTPStatus.OK

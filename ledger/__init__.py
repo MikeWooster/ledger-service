@@ -15,7 +15,7 @@ def create_app(extra_config=None):
     db.init_app(app)
     Migrate(app, db)
 
-    from ledger.controllers import blueprint as ledger_blueprint
+    from ledger.urls import blueprint as ledger_blueprint
 
     app.register_blueprint(ledger_blueprint)
 
