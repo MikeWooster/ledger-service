@@ -2,8 +2,8 @@ from decimal import Decimal
 from http import HTTPStatus
 
 from ledger.authorization.models import Token
-from ledger.ledger.accounting import Ledger
-from ledger.ledger.accounting_types import TypeCode, credit_type, debit_type
+from ledger.app.accounting import Ledger
+from ledger.app.accounting_types import TypeCode, credit_type, debit_type
 
 
 class MethodNotAllowedTests:

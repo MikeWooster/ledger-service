@@ -6,9 +6,9 @@ from flask.views import MethodView
 from werkzeug.exceptions import BadRequest, Unauthorized
 
 from ledger.authorization.utils import token_is_valid
-from ledger.ledger.accounting import Balance, Ledger
-from ledger.ledger.accounting_types import TypeCode
-from ledger.ledger.schemas import balance_schema, credit_schema, debit_schema, ledger_entry_schema
+from ledger.app.accounting import Balance, Ledger
+from ledger.app.accounting_types import TypeCode
+from ledger.app.schemas import balance_schema, credit_schema, debit_schema, ledger_entry_schema
 
 
 def authorization_required(func):

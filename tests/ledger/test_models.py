@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-from ledger.ledger.accounting_types import TypeCode
-from ledger.ledger.models import Ledger, Balance
+from ledger.app.accounting_types import TypeCode
+from ledger.app.models import Ledger, Balance
 
 
 def test_ledger_save_method(db_session):
