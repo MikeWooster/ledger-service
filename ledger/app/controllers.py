@@ -3,8 +3,9 @@ from http import HTTPStatus
 
 from flask import jsonify, request
 from flask.views import MethodView
-from werkzeug.exceptions import BadRequest, Unauthorized
+from werkzeug.exceptions import Unauthorized
 
+from ledger.app.exceptions import BadRequest
 from ledger.authorization.utils import token_is_valid
 from ledger.app.accounting import Balance, Ledger
 from ledger.app.accounting_types import TypeCode
@@ -69,22 +70,40 @@ class DebitView(CreateLedgerEntryView):
     type_code = TypeCode.DEBIT
 
 
-class LedgerView(AuthorizedMethodView):
+class TransactionHistoryView(AuthorizedMethodView):
     """View the ledger."""
 
-    def get(self):
-        entries = Ledger.get_all_entries()
+    def get(self, account_number: str):
+        if self._limit_is_provided():
+            entries = Ledger.get_entries_for_account_with_limit(account_number, request.args["limit"])
+        else:
+            entries = Ledger.get_entries_for_account(account_number)
+        response = self._build_response_from_entries(entries)
+        return jsonify(response), HTTPStatus.OK
+
+    def _limit_is_provided(self):
+        if "limit" not in request.args:
+            return False
+        limit_parameter = request.args["limit"]
+        try:
+            int(limit_parameter)
+        except Exception:
+            raise BadRequest(f"Unrecognized limit parameter: '{limit_parameter}'")
+        return True
+
+    @staticmethod
+    def _build_response_from_entries(entries):
         response = []
         for entry in entries:
             serialized_entry = ledger_entry_schema.dump(entry)
             response.append(serialized_entry.data)
-        return jsonify(response), HTTPStatus.OK
+        return response
 
 
 class AccountBalanceView(AuthorizedMethodView):
     """Get the account balance for an account."""
 
-    def get(self, account_number):
+    def get(self, account_number: str):
         balance = Balance.get_for_account(account_number)
         serialized_entry = balance_schema.dump({"balance": balance})
         return jsonify(serialized_entry.data), HTTPStatus.OK

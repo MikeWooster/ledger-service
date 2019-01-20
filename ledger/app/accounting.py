@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import List
 
+from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import NoResultFound
 
 from ledger.app.accounting_types import AbstractEntryType, TypeCode, get_accounting_type
@@ -10,10 +11,17 @@ from ledger.app import models
 class LedgerEntry:
     """Representation of an entry in the Ledger."""
 
-    def __init__(self, account_number: str, amount: Decimal, accounting_type: AbstractEntryType):
+    def __init__(
+        self,
+        account_number: str,
+        amount: Decimal,
+        accounting_type: AbstractEntryType,
+        balance: Decimal = None,
+    ):
         self.account_number = account_number
         self.amount = amount
         self.accounting_type = accounting_type
+        self.balance = balance
 
     def get_signed_amount(self) -> Decimal:
         """Returns the correctly signed amount."""
@@ -32,6 +40,7 @@ class Balance:
         """Updates the account holder balance from a ledger entry."""
         balance_record = Balance._get_or_create_record(entry.account_number)
         balance_record.balance += entry.get_signed_amount()
+        entry.balance = balance_record.balance
         balance_record.save()
 
     @staticmethod
@@ -80,13 +89,32 @@ class Ledger:
         ledger_record.save()
 
     @classmethod
-    def get_all_entries(cls) -> List[LedgerEntry]:
-        """Return all ledger entries."""
-        # TODO: this method should be deprecated as it is going to get really inefficient.
+    def get_entries_for_account(cls, account_number: str) -> List[LedgerEntry]:
+        """Return all ledger entries for an account."""
+        query = models.Ledger.query.filter_by(account_number=account_number).order_by(
+            models.Ledger.id.desc()
+        )
+        return cls._build_entries_from_query(account_number, query)
+
+    @classmethod
+    def get_entries_for_account_with_limit(cls, account_number: str, limit: int) -> List[LedgerEntry]:
+        """Return up to the limited number of ledger entries for an account."""
+        query = (
+            models.Ledger.query.filter_by(account_number=account_number)
+            .order_by(models.Ledger.id.desc())
+            .limit(limit)
+        )
+        return cls._build_entries_from_query(account_number, query)
+
+    @classmethod
+    def _build_entries_from_query(cls, account_number: str, query: Query) -> List[LedgerEntry]:
+        latest_balance = Balance.get_for_account(account_number)
         entries = []
-        for record in models.Ledger.query.all():
+        for record in query:
             entry = cls._record_to_entry(record)
+            entry.balance = latest_balance
             entries.append(entry)
+            latest_balance -= entry.get_signed_amount()
         return entries
 
     @classmethod

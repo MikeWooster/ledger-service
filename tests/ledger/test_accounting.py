@@ -8,9 +8,10 @@ from ledger.app.accounting_types import TypeCode
 
 @pytest.mark.parametrize("type_code,type_str", [(TypeCode.CREDIT, "Credit"), (TypeCode.DEBIT, "Debit")])
 def test_add_accounting_type_to_ledger(db_session, type_code, type_str):
-    entry = Ledger.add_entry(account_number="39209030", amount=Decimal("1230.00"), type_code=type_code)
-    assert len(Ledger.get_all_entries()) == 1
-    assert entry.account_number == "39209030"
+    account_number = "39209030"
+    entry = Ledger.add_entry(account_number=account_number, amount=Decimal("1230.00"), type_code=type_code)
+    assert len(Ledger.get_entries_for_account(account_number)) == 1
+    assert entry.account_number == account_number
     assert entry.amount == Decimal("1230.00")
     assert str(entry.accounting_type) == type_str
 

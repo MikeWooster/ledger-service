@@ -10,6 +10,7 @@ class LedgerEntrySchema(Schema):
     accountNumber = fields.Str(attribute="account_number")
     accountingType = fields.Str(attribute="accounting_type")
     amount = fields.Str(attribute="amount")
+    balance = fields.Str(attribute="balance", required=False)
 
 
 class TransactionData(NamedTuple):
