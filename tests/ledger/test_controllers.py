@@ -1,9 +1,21 @@
+from datetime import datetime
 from decimal import Decimal
 from http import HTTPStatus
+from unittest.mock import patch
 
-from ledger.authorization.models import Token
+import pytz
+from freezegun import freeze_time
+
 from ledger.app.accounting import Ledger
 from ledger.app.accounting_types import TypeCode, credit_type, debit_type
+from ledger.authorization.models import Token
+
+
+def assertDictContains(expected: dict, actual: dict):
+    """Assert whether a sub dictionary is part of a larger dictionary."""
+    for key in expected:
+        assert key in actual
+        assert expected[key] == actual[key]
 
 
 class MethodNotAllowedTests:
@@ -169,51 +181,121 @@ class TestMethodsNotAllowedOnBalanceEndpoint(MethodNotAllowedTests):
     endpoint_url = "/account/12390403/balance"
 
 
-def test_add_credit_to_account_success(db_session, authorized_client):
-    account_number = "19201923830"
-    response = authorized_client.post(
-        "ledger/credit",
-        json={"creditAmount": "1000.81", "accountNumber": account_number},
-        headers={"Content-Type": "application/json"},
-    )
-    assert response.status_code == HTTPStatus.CREATED
-    assert response.json == {
-        "amount": "1000.81",
-        "accountNumber": account_number,
-        "accountingType": "Credit",
-        "balance": "1000.81",
-    }
-    assert len(Ledger.get_entries_for_account(account_number)) == 1
-    ledger_entry = Ledger.get_entries_for_account(account_number)[0]
-    assert ledger_entry.account_number == account_number
-    assert ledger_entry.amount == Decimal("1000.81")
-    assert ledger_entry.accounting_type == credit_type
+class TestCreditView:
+    def test_add_credit_to_account_success(self, db_session, authorized_client):
+        account_number = "19201923830"
+        response = authorized_client.post(
+            "ledger/credit",
+            json={"creditAmount": "1000.81", "accountNumber": account_number},
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assertDictContains(
+            expected={
+                "amount": "1000.81",
+                "accountNumber": account_number,
+                "accountingType": "Credit",
+                "balance": "1000.81",
+            },
+            actual=response.json,
+        )
+
+        assert len(Ledger.get_entries_for_account(account_number)) == 1
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.account_number == account_number
+        assert ledger_entry.amount == Decimal("1000.81")
+        assert ledger_entry.accounting_type == credit_type
+
+    def test_add_credit_without_application_json_header_returns_bad_request(
+        self, db_session, authorized_client
+    ):
+        response = authorized_client.post("ledger/credit")
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    @patch("ledger.app.accounting.uuid.uuid4")
+    def test_add_credit_stores_a_unique_transaction_id(self, mock_uuid4, db_session, authorized_client):
+        account_number = "9729399840"
+        uuid = "2b391f46-8c68-42e4-8364-ff344f092987"
+        mock_uuid4.return_value = uuid
+        response = authorized_client.post(
+            "ledger/credit",
+            json={"creditAmount": "1000.81", "accountNumber": account_number},
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.json["transactionId"] == uuid
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.transaction_id == uuid
+
+    def test_add_credit_sets_created_at(self, db_session, authorized_client):
+        account_number = "87665765"
+        utc_now = datetime(2018, 3, 4, 12, 43, 22, 829_312, tzinfo=pytz.utc)
+        with freeze_time(utc_now):
+            response = authorized_client.post(
+                "ledger/credit",
+                json={"creditAmount": "1000.81", "accountNumber": account_number},
+                headers={"Content-Type": "application/json"},
+            )
+        assert response.json["createdAt"] == "2018-03-04T12:43:22.829312+00:00"
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.created_at == utc_now
 
 
-def test_add_credit_without_application_json_header_returns_bad_request(db_session, authorized_client):
-    response = authorized_client.post("ledger/credit")
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+class TestDebitView:
+    def test_add_debit_to_account_success(self, db_session, authorized_client):
+        account_number = "23938292"
+        response = authorized_client.post(
+            "ledger/debit",
+            json={"debitAmount": "328.18", "accountNumber": account_number},
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assertDictContains(
+            expected={
+                "amount": "328.18",
+                "accountNumber": account_number,
+                "accountingType": "Debit",
+                "balance": "-328.18",
+            },
+            actual=response.json,
+        )
+        assert len(Ledger.get_entries_for_account(account_number)) == 1
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.account_number == account_number
+        assert ledger_entry.amount == Decimal("328.18")
+        assert ledger_entry.accounting_type == debit_type
 
+    def test_add_debit_without_application_json_header_returns_bad_request(
+        self, db_session, authorized_client
+    ):
+        response = authorized_client.post("ledger/debit")
+        assert response.status_code == HTTPStatus.BAD_REQUEST
 
-def test_add_debit_to_account_success(db_session, authorized_client):
-    account_number = "23938293"
-    response = authorized_client.post(
-        "ledger/debit",
-        json={"debitAmount": "328.18", "accountNumber": account_number},
-        headers={"Content-Type": "application/json"},
-    )
-    assert response.status_code == HTTPStatus.CREATED
-    assert response.json == {
-        "amount": "328.18",
-        "accountNumber": account_number,
-        "accountingType": "Debit",
-        "balance": "-328.18",
-    }
-    assert len(Ledger.get_entries_for_account(account_number)) == 1
-    ledger_entry = Ledger.get_entries_for_account(account_number)[0]
-    assert ledger_entry.account_number == account_number
-    assert ledger_entry.amount == Decimal("328.18")
-    assert ledger_entry.accounting_type == debit_type
+    @patch("ledger.app.accounting.uuid.uuid4")
+    def test_add_debit_stores_a_unique_transaction_id(self, mock_uuid4, db_session, authorized_client):
+        account_number = "9729399840"
+        uuid = "2b391f46-8c68-42e4-8364-ff344f092987"
+        mock_uuid4.return_value = uuid
+        response = authorized_client.post(
+            "ledger/debit",
+            json={"debitAmount": "1000.81", "accountNumber": account_number},
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.json["transactionId"] == uuid
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.transaction_id == uuid
+
+    def test_add_debit_sets_created_at(self, db_session, authorized_client):
+        account_number = "87665765"
+        utc_now = datetime(2018, 3, 4, 12, 43, 22, 829_312, tzinfo=pytz.utc)
+        with freeze_time(utc_now):
+            response = authorized_client.post(
+                "ledger/debit",
+                json={"debitAmount": "1000.81", "accountNumber": account_number},
+                headers={"Content-Type": "application/json"},
+            )
+        assert response.json["createdAt"] == "2018-03-04T12:43:22.829312+00:00"
+        ledger_entry = Ledger.get_entries_for_account(account_number)[0]
+        assert ledger_entry.created_at == utc_now
 
 
 def test_add_debit_without_application_json_header_returns_bad_request(db_session, authorized_client):
@@ -234,9 +316,15 @@ class TestTransactionHistoryView:
         response = authorized_client.get(f"/account/{account_number}/transactions")
         assert response.status_code == HTTPStatus.OK
         assert len(response.json) == 1
-        assert response.json == [
-            {"amount": "100.92", "accountNumber": "89234", "accountingType": "Debit", "balance": "-100.92"}
-        ]
+        assertDictContains(
+            expected={
+                "amount": "100.92",
+                "accountNumber": "89234",
+                "accountingType": "Debit",
+                "balance": "-100.92",
+            },
+            actual=response.json[0],
+        )
 
     def test_only_account_number_entries_are_returned(self, db_session, authorized_client):
         account_number = "89234"
@@ -245,9 +333,15 @@ class TestTransactionHistoryView:
         response = authorized_client.get(f"/account/{account_number}/transactions")
         assert response.status_code == HTTPStatus.OK
         assert len(response.json) == 1
-        assert response.json == [
-            {"amount": "100.92", "accountNumber": "89234", "accountingType": "Debit", "balance": "-100.92"}
-        ]
+        assertDictContains(
+            expected={
+                "amount": "100.92",
+                "accountNumber": "89234",
+                "accountingType": "Debit",
+                "balance": "-100.92",
+            },
+            actual=response.json[0],
+        )
 
     def test_multiple_entries_populates_balance(self, db_session, authorized_client):
         account_number = "89234"
@@ -258,11 +352,33 @@ class TestTransactionHistoryView:
         assert response.status_code == HTTPStatus.OK
         assert len(response.json) == 3
         # Expecting entry to be in reverse order.
-        assert response.json == [
-            {"amount": "928.32", "accountNumber": "89234", "accountingType": "Credit", "balance": "1029.14"},
-            {"amount": "100.92", "accountNumber": "89234", "accountingType": "Debit", "balance": "100.82"},
-            {"amount": "201.74", "accountNumber": "89234", "accountingType": "Credit", "balance": "201.74"},
-        ]
+        assertDictContains(
+            expected={
+                "amount": "928.32",
+                "accountNumber": "89234",
+                "accountingType": "Credit",
+                "balance": "1029.14",
+            },
+            actual=response.json[0],
+        )
+        assertDictContains(
+            expected={
+                "amount": "100.92",
+                "accountNumber": "89234",
+                "accountingType": "Debit",
+                "balance": "100.82",
+            },
+            actual=response.json[1],
+        )
+        assertDictContains(
+            expected={
+                "amount": "201.74",
+                "accountNumber": "89234",
+                "accountingType": "Credit",
+                "balance": "201.74",
+            },
+            actual=response.json[2],
+        )
 
     def test_multiple_entries_with_limit_filter(self, db_session, authorized_client):
         account_number = "939288202"
@@ -279,26 +395,34 @@ class TestTransactionHistoryView:
 
         assert response.status_code == HTTPStatus.OK
         assert len(response.json) == 3
-        assert response.json == [
-            {
+
+        assertDictContains(
+            expected={
                 "amount": "93.21",
                 "accountNumber": "939288202",
                 "accountingType": "Credit",
                 "balance": "1051.14",
             },
-            {
+            actual=response.json[0],
+        )
+        assertDictContains(
+            expected={
                 "amount": "71.21",
                 "accountNumber": "939288202",
                 "accountingType": "Debit",
                 "balance": "957.93",
             },
-            {
+            actual=response.json[1],
+        )
+        assertDictContains(
+            expected={
                 "amount": "928.32",
                 "accountNumber": "939288202",
                 "accountingType": "Credit",
                 "balance": "1029.14",
             },
-        ]
+            actual=response.json[2],
+        )
 
     def test_with_limit_filter_not_an_integer_returns_bad_request(self, db_session, authorized_client):
         account_number = "939288202"
@@ -308,6 +432,40 @@ class TestTransactionHistoryView:
         assert "description" in response.json["error"]
         expected_message = "Unrecognized limit parameter: 'foo'"
         assert response.json["error"]["description"] == expected_message
+
+    @patch("ledger.app.accounting.uuid.uuid4")
+    def test_transaction_id_is_present_in_transaction_history(
+        self, mock_uuid4, db_session, authorized_client
+    ):
+        mock_uuid4.return_value = "6e7f52e6-4003-4c34-9581-2e52788b2d91"
+        account_number = "939288202"
+
+        Ledger.add_entry(account_number, Decimal("201.74"), TypeCode.CREDIT)
+
+        response = authorized_client.get(f"/account/{account_number}/transactions")
+
+        assert response.status_code == HTTPStatus.OK
+        assert "transactionId" in response.json[0]
+        assert response.json[0]["transactionId"] == "6e7f52e6-4003-4c34-9581-2e52788b2d91"
+
+    def test_each_transaction_has_created_at_set(self, db_session, authorized_client):
+        account_number = "939288202"
+        transaction_one_time = datetime(2018, 3, 4, 12, 43, 22, 829_312, tzinfo=pytz.utc)
+        transaction_two_time = datetime(2018, 4, 5, 12, 23, 12, 243_546, tzinfo=pytz.utc)
+        with freeze_time(transaction_one_time):
+            Ledger.add_entry(account_number, Decimal("201.74"), TypeCode.CREDIT)
+        with freeze_time(transaction_two_time):
+            Ledger.add_entry(account_number, Decimal("10.19"), TypeCode.DEBIT)
+
+        response = authorized_client.get(f"/account/{account_number}/transactions")
+
+        assert response.status_code == HTTPStatus.OK
+        assertDictContains(
+            expected={"createdAt": "2018-04-05T12:23:12.243546+00:00"}, actual=response.json[0]
+        )
+        assertDictContains(
+            expected={"createdAt": "2018-03-04T12:43:22.829312+00:00"}, actual=response.json[1]
+        )
 
 
 class TestAccountBalanceView:

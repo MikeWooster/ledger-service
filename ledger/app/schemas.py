@@ -11,6 +11,8 @@ class LedgerEntrySchema(Schema):
     accountingType = fields.Str(attribute="accounting_type")
     amount = fields.Str(attribute="amount")
     balance = fields.Str(attribute="balance", required=False)
+    transactionId = fields.UUID(attribute="transaction_id")
+    createdAt = fields.DateTime(attribute="created_at")
 
 
 class TransactionData(NamedTuple):

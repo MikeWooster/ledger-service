@@ -9,6 +9,7 @@ application_dependencies = [
     'psycopg2',
     'flask-migrate',
     'marshmallow',
+    'pytz',
 ]
 prod_dependencies = []
 test_dependencies = [
@@ -17,6 +18,7 @@ test_dependencies = [
     'pytest-cov',
     'pytest-env',
     'pytest-flask-sqlalchemy',
+    'freezegun',
 ]
 lint_dependencies = [
     'flake8',

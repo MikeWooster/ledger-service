@@ -1,4 +1,6 @@
+from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 
 import pytest
 from marshmallow import ValidationError
@@ -12,22 +14,42 @@ class TestLedgerEntrySchema:
     schema = ledger_entry_schema
 
     def test_serializing_object_with_valid_credit_type(self):
+        created_timestamp = datetime(2018, 1, 1)
+        transaction_id = UUID("07831682-8a29-4176-a50d-8e69b9c5c5db")
         ledger_entry = LedgerEntry(
-            account_number="12345678", accounting_type=credit_type, amount=Decimal("1283.92")
+            account_number="12345678",
+            accounting_type=credit_type,
+            amount=Decimal("1283.92"),
+            created_at=created_timestamp,
+            transaction_id=transaction_id,
+            balance=Decimal("-20.00"),
         )
         serialized_data = self.schema.dump(ledger_entry).data
         assert serialized_data["accountNumber"] == "12345678"
         assert serialized_data["accountingType"] == "Credit"
         assert serialized_data["amount"] == "1283.92"
+        assert serialized_data["createdAt"] == "2018-01-01T00:00:00+00:00"
+        assert serialized_data["transactionId"] == "07831682-8a29-4176-a50d-8e69b9c5c5db"
+        assert serialized_data["balance"] == "-20.00"
 
     def test_serializing_object_with_valid_debit_type(self):
+        created_timestamp = datetime(2016, 4, 4)
+        transaction_id = UUID("d6aa3369-08af-47be-aba3-d1969c0df138")
         ledger_entry = LedgerEntry(
-            account_number="399383902", accounting_type=debit_type, amount=Decimal("827.81")
+            account_number="399383902",
+            accounting_type=debit_type,
+            amount=Decimal("827.81"),
+            created_at=created_timestamp,
+            transaction_id=transaction_id,
+            balance=Decimal("190.00"),
         )
         serialized_data = self.schema.dump(ledger_entry).data
         assert serialized_data["accountNumber"] == "399383902"
         assert serialized_data["accountingType"] == "Debit"
         assert serialized_data["amount"] == "827.81"
+        assert serialized_data["createdAt"] == "2016-04-04T00:00:00+00:00"
+        assert serialized_data["transactionId"] == "d6aa3369-08af-47be-aba3-d1969c0df138"
+        assert serialized_data["balance"] == "190.00"
 
 
 class TestCreditSchema:

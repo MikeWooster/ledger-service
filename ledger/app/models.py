@@ -11,6 +11,8 @@ class Ledger(BaseModel):
     account_number = db.Column(db.String(16))
     amount = db.Column(db.DECIMAL(10, 2))
     accounting_type = db.Column(db.String(1))
+    transaction_id = db.Column(db.String(36))
+    created_at = db.Column(db.DateTime(timezone=True))
 
     def __repr__(self):
         return (
